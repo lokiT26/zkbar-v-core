@@ -1,0 +1,22 @@
+# Ignore Fabric binaries and samples (we will use the install script to get these on each machine)
+fabric-samples/
+bin/
+config/
+builders/
+
+# Ignore generated crypto material
+organizations/
+channel-artifacts/
+*.tar.gz
+
+# IDE settings
+.vscode/
+.idea/
+
+# Node/Java dependencies
+node_modules/
+target/
+build/
+.gradle/
+
+install-fabric.sh
