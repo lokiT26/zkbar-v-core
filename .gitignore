@@ -20,3 +20,4 @@ build/
 .gradle/
 
 install-fabric.sh
+reset-network.sh
