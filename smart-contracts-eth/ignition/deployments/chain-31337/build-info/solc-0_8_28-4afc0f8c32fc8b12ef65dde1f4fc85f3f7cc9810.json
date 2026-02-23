@@ -1,0 +1,39 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_28-4afc0f8c32fc8b12ef65dde1f4fc85f3f7cc9810",
+  "solcVersion": "0.8.28",
+  "solcLongVersion": "0.8.28+commit.7893614a",
+  "userSourceNameMap": {
+    "contracts/AnchorRegistry.sol": "project/contracts/AnchorRegistry.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "cancun",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode",
+            "evm.deployedBytecode",
+            "evm.methodIdentifiers",
+            "metadata"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/AnchorRegistry.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.24;\n\n/**\n * @title ZKBAR-V Anchor Registry\n * @dev Stores SHA-256 hashes of academic records on the Polygon zkEVM.\n * This allows public verification without revealing student privacy.\n */\ncontract AnchorRegistry {\n    \n    // Event emitted when a new record is anchored\n    // Indexing the 'hash' allows external apps to search for it easily\n    event RecordAnchored(string indexed studentDid, string documentHash, uint256 timestamp);\n\n    // State Variable: Maps a Document Hash -> Boolean (Exists?)\n    // We use a mapping for O(1) constant time lookup (cheap gas)\n    mapping(string => bool) private anchors;\n\n    // State Variable: Maps a Document Hash -> Issuer DID (The University)\n    mapping(string => string) public issuers;\n\n    // Access Control: Only the University can add records\n    address public owner;\n\n    constructor() {\n        owner = msg.sender;\n    }\n\n    modifier onlyOwner() {\n        require(msg.sender == owner, \"Only the University can anchor records\");\n        _;\n    }\n\n    /**\n     * @dev Anchors a new document hash to the blockchain.\n     * @param _studentDid The DID of the student (e.g., \"did:zkbar:123\")\n     * @param _documentHash The SHA-256 hash of the JSON/PDF stored in Fabric\n     */\n    function anchorRecord(string memory _studentDid, string memory _documentHash) public onlyOwner {\n        require(!anchors[_documentHash], \"Record already anchored\");\n\n        anchors[_documentHash] = true;\n        issuers[_documentHash] = \"did:zkbar:university-node-1\"; // Hardcoded for now, dynamic later\n\n        emit RecordAnchored(_studentDid, _documentHash, block.timestamp);\n    }\n\n    /**\n     * @dev Verifies if a document hash exists on-chain.\n     * @param _documentHash The hash presented by the student\n     * @return valid True if the hash exists\n     * @return issuerDid The DID of the university that issued it\n     */\n    function verifyRecord(string memory _documentHash) public view returns (bool valid, string memory issuerDid) {\n        return (anchors[_documentHash], issuers[_documentHash]);\n    }\n}\n"
+      }
+    }
+  }
+}
