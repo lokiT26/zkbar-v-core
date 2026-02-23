@@ -1,0 +1,16 @@
+# Security: NEVER commit API keys
+.env
+.env.test
+.env.production
+
+# Dependencies: Too heavy for Git
+node_modules/
+npm-debug.log
+
+# Temporary Uploads: We don't want user PDFs in Git
+uploads/
+tmp/
+
+# System Junk
+.DS_Store
+Thumbs.db
