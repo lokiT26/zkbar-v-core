@@ -14,3 +14,5 @@ tmp/
 # System Junk
 .DS_Store
 Thumbs.db
+dummy.pdf
+wallet/
