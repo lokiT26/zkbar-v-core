@@ -20,4 +20,4 @@
 /coverage
 
 # Ignore local Hardhat node deployments
-smart-contracts-eth/ignition/deployments/chain-31337/
+/ignition/deployments/chain-31337/*

@@ -23,21 +23,57 @@ export default function IssuePage() {
         e.preventDefault();
     };
 
+    const calculateHash = async (fileObj) => {
+        try {
+            const arrayBuffer = await fileObj.arrayBuffer();
+            const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return "0x" + hashHex;
+        } catch (error) {
+            console.error("Error calculating hash:", error);
+            return "";
+        }
+    };
+
+    const handleFileProcess = async (fileObj) => {
+        setFile(fileObj);
+        const hash = await calculateHash(fileObj);
+        setFormData(prev => ({ ...prev, originalHash: hash }));
+    };
+
     const handleDrop = (e) => {
         e.preventDefault();
         if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-            setFile(e.dataTransfer.files[0]);
+            handleFileProcess(e.dataTransfer.files[0]);
         }
     };
 
     const handleFileChange = (e) => {
         if (e.target.files && e.target.files[0]) {
-            setFile(e.target.files[0]);
+            handleFileProcess(e.target.files[0]);
         }
     };
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleLookupDid = async () => {
+        if (!formData.studentId) return;
+        setLoading(true);
+        try {
+            const res = await axios.get(`http://localhost:3000/api/did/${formData.studentId}`);
+            if (res.data.success) {
+                setFormData(prev => ({ ...prev, did: res.data.did }));
+                setError(null);
+            }
+        } catch (err) {
+            setError(err.response?.data?.error || "Failed to fetch DID. Student might not be registered.");
+            setFormData(prev => ({ ...prev, did: '' }));
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -80,13 +116,16 @@ export default function IssuePage() {
 
             <form onSubmit={handleSubmit}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                    <div className="form-group">
+                    <div className="form-group" style={{ display: 'flex', flexDirection: 'column' }}>
                         <label className="form-label">Student ID</label>
-                        <input name="studentId" value={formData.studentId} onChange={handleChange} className="form-input" placeholder="e.g. STUDENT_123" required />
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <input name="studentId" value={formData.studentId} onChange={handleChange} className="form-input" placeholder="e.g. STUDENT_123" required style={{ flex: 1 }} />
+                            <button type="button" onClick={handleLookupDid} className="action-button" style={{ width: 'auto', padding: '0 1rem', background: 'var(--bg-panel)' }}>Look Up</button>
+                        </div>
                     </div>
                     <div className="form-group">
                         <label className="form-label">Decentralized ID (DID)</label>
-                        <input name="did" value={formData.did} onChange={handleChange} className="form-input" placeholder="did:zkbar:..." required />
+                        <input name="did" value={formData.did} className="form-input" placeholder="did:zkbar:... (Auto-filled)" readOnly required style={{ background: 'rgba(255,255,255,0.05)' }} />
                     </div>
                     <div className="form-group">
                         <label className="form-label">Degree Name</label>
@@ -102,7 +141,7 @@ export default function IssuePage() {
                     </div>
                     <div className="form-group">
                         <label className="form-label">Original Document Hash</label>
-                        <input name="originalHash" value={formData.originalHash} onChange={handleChange} className="form-input" placeholder="SHA-256 Hash" required />
+                        <input name="originalHash" value={formData.originalHash} className="form-input" placeholder="Auto-calculated on upload" readOnly required style={{ background: 'rgba(255,255,255,0.05)' }} />
                     </div>
                 </div>
 

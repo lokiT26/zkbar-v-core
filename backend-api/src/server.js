@@ -20,6 +20,56 @@ const upload = multer({ dest: 'uploads/' });
 
 // --- ROUTES ---
 
+const DID_REGISTRY_FILE = path.join(__dirname, '..', 'registered_dids.json');
+
+// Helper to load registered DIDs
+function loadDids() {
+    if (fs.existsSync(DID_REGISTRY_FILE)) {
+        return JSON.parse(fs.readFileSync(DID_REGISTRY_FILE, 'utf8'));
+    }
+    return {};
+}
+
+// Helper to save registered DIDs
+function saveDids(dids) {
+    fs.writeFileSync(DID_REGISTRY_FILE, JSON.stringify(dids, null, 2));
+}
+
+// 0. Register Student DID Route
+app.post('/api/register-did', (req, res) => {
+    const { studentId, did } = req.body;
+    if (!studentId || !did) {
+        return res.status(400).json({ error: 'Missing studentId or did' });
+    }
+
+    try {
+        const dids = loadDids();
+        dids[studentId] = did;
+        saveDids(dids);
+
+        console.log(`📝 Registered DID ${did} for Student ${studentId}`);
+        res.json({ success: true, message: 'DID registered successfully' });
+    } catch (error) {
+        console.error("DID Registration Error:", error);
+        res.status(500).json({ error: 'Failed to register DID' });
+    }
+});
+
+// 0.5 Fetch registered DID (For Issuer Portal)
+app.get('/api/did/:studentId', (req, res) => {
+    const studentId = req.params.studentId;
+    try {
+        const dids = loadDids();
+        if (dids[studentId]) {
+            res.json({ success: true, did: dids[studentId] });
+        } else {
+            res.status(404).json({ error: 'DID not found for this student ID' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch DID' });
+    }
+});
+
 // 1. Health Check (To see if server is running)
 app.get('/health', (req, res) => {
     res.json({ status: 'OK', timestamp: new Date() });
@@ -106,6 +156,46 @@ app.get('/api/transcript/:id', async (req, res) => {
     } catch (error) {
         console.error("Query Error:", error);
         res.status(404).json({ error: 'Transcript not found or query failed', details: error.message });
+    }
+});
+
+// 4. Wallet Sync Route
+app.get('/api/wallet/sync/:did', async (req, res) => {
+    const did = req.params.did;
+
+    // First find the student ID for this DID
+    try {
+        const dids = loadDids();
+        let studentId = null;
+        for (const [sId, mappedDid] of Object.entries(dids)) {
+            if (mappedDid === did) {
+                studentId = sId;
+                break;
+            }
+        }
+
+        if (!studentId) {
+            return res.status(404).json({ error: 'No student registered with this DID' });
+        }
+
+        // Fetch their credential from Fabric
+        console.log(`🔄 Syncing wallet for DID: ${did} (Student: ${studentId})`);
+        const recordData = await queryCredential(studentId);
+
+        // Also get EVM Verification
+        const evmVerification = await verifyAnchor(recordData.originalHash);
+
+        res.json({
+            success: true,
+            credential: {
+                ...recordData,
+                evmVerification
+            }
+        });
+
+    } catch (error) {
+        console.error("Wallet Sync Error:", error);
+        res.status(404).json({ error: 'Credential not found or not yet issued', details: error.message });
     }
 });
 

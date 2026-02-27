@@ -1,23 +1,49 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { Search, ShieldAlert, ShieldCheck, Link as LinkIcon, ExternalLink } from 'lucide-react';
+import { Search, ShieldAlert, ShieldCheck, Link as LinkIcon, ExternalLink, QrCode } from 'lucide-react';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 
 export default function VerifyPage() {
     const [studentId, setStudentId] = useState('');
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState(null);
     const [error, setError] = useState(null);
+    const [scanning, setScanning] = useState(false);
 
-    const handleSearch = async (e) => {
-        e.preventDefault();
-        if (!studentId.trim()) return;
+    React.useEffect(() => {
+        if (!scanning) return;
 
+        const scanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false);
+
+        scanner.render(
+            (decodedText) => {
+                try {
+                    const data = JSON.parse(decodedText);
+                    if (data.type === 'VC_PRESENTATION' && data.studentId) {
+                        setStudentId(data.studentId);
+                        scanner.clear();
+                        setScanning(false);
+                        performSearch(data.studentId);
+                    }
+                } catch (e) {
+                    console.log("Invalid QR code format");
+                }
+            },
+            (err) => { /* ignore normal scan errors */ }
+        );
+
+        return () => {
+            scanner.clear().catch(e => console.error(e));
+        };
+    }, [scanning]);
+
+    const performSearch = async (sId) => {
         setLoading(true);
         setError(null);
         setResult(null);
 
         try {
-            const res = await axios.get(`http://localhost:3000/api/transcript/${studentId}`);
+            const res = await axios.get(`http://localhost:3000/api/transcript/${sId}`);
             setResult({
                 record: res.data.record,
                 evmVerification: res.data.evmVerification
@@ -29,6 +55,12 @@ export default function VerifyPage() {
         }
     };
 
+    const handleSearch = async (e) => {
+        e.preventDefault();
+        if (!studentId.trim()) return;
+        performSearch(studentId);
+    };
+
     return (
         <div className="glass-panel" style={{ maxWidth: '800px', margin: '0 auto' }}>
             <h2 style={{ marginBottom: '0.5rem' }}>Verify Credential</h2>
@@ -36,7 +68,7 @@ export default function VerifyPage() {
                 Query the Hyperledger Fabric ledger to verify a student's academic standing and decentralized identifiers.
             </p>
 
-            <form onSubmit={handleSearch} style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
+            <form onSubmit={handleSearch} style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
                 <input
                     type="text"
                     value={studentId}
@@ -50,6 +82,23 @@ export default function VerifyPage() {
                     {loading ? <div className="spinner"></div> : <><Search size={18} /> Verify</>}
                 </button>
             </form>
+
+            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                <button
+                    type="button"
+                    onClick={() => setScanning(!scanning)}
+                    className="action-button"
+                    style={{ width: 'auto', padding: '0.5rem 1.5rem', background: 'var(--bg-panel)', border: '1px solid var(--glass-border)' }}
+                >
+                    <QrCode size={18} /> {scanning ? 'Stop Scanning' : 'Scan Student QR Code'}
+                </button>
+            </div>
+
+            {scanning && (
+                <div style={{ background: 'white', padding: '1rem', borderRadius: '12px', marginBottom: '2rem', color: '#000' }}>
+                    <div id="qr-reader" style={{ width: '100%', maxWidth: '500px', margin: '0 auto' }}></div>
+                </div>
+            )}
 
             {error && (
                 <div className="status-card error">
