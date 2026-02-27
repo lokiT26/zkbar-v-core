@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const { uploadToIPFS } = require('./services/ipfsService');
 const { submitCredential, queryCredential } = require('./services/fabricService');
+const { anchorRecord, verifyAnchor } = require('./services/evmService');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -65,11 +66,16 @@ app.post('/api/issue', upload.single('file'), async (req, res) => {
             status
         );
 
-        // 4. Respond to the Frontend
+        // 4. Anchor on EVM
+        console.log(`⛓️ Anchoring record to EVM...`);
+        const evmAnchor = await anchorRecord(did, originalHash);
+
+        // 5. Respond to the Frontend
         res.json({
             success: true,
-            message: 'Credential successfully issued to Fabric and PDF stored on IPFS',
-            record: record
+            message: 'Credential successfully issued to Fabric and anchored on EVM',
+            record: record,
+            evmAnchor
         });
 
     } catch (error) {
@@ -88,9 +94,14 @@ app.get('/api/transcript/:id', async (req, res) => {
         console.log(`🔍 Querying Fabric Ledger for student: ${studentId}...`);
         const recordData = await queryCredential(studentId);
 
+        // Verify anchor on EVM
+        console.log(`⛓️ Verifying EVM Anchor for hash: ${recordData.originalHash}...`);
+        const evmVerification = await verifyAnchor(recordData.originalHash);
+
         res.json({
             success: true,
-            record: recordData
+            record: recordData,
+            evmVerification
         });
     } catch (error) {
         console.error("Query Error:", error);
@@ -99,6 +110,10 @@ app.get('/api/transcript/:id', async (req, res) => {
 });
 
 // Start Server
-app.listen(PORT, () => {
-    console.log(`🚀 API Server running on http://localhost:${PORT}`);
-});
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`🚀 API Server running on http://localhost:${PORT}`);
+    });
+}
+
+module.exports = app;

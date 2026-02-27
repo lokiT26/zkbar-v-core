@@ -153,6 +153,12 @@ export default function IssuePage() {
                     <div style={{ marginTop: '0.5rem', fontSize: '0.875rem' }}>
                         {success.message}
                     </div>
+                    {success.evmAnchor && !success.evmAnchor.skipped && (
+                        <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', background: 'rgba(58, 141, 255, 0.1)', color: 'var(--accent-primary)', padding: '0.5rem', borderRadius: '4px', fontFamily: 'monospace' }}>
+                            <strong>Polygon zkEVM Anchor TX:</strong> <br />
+                            {success.evmAnchor.txnHash}
+                        </div>
+                    )}
                 </div>
             )}
         </div>
