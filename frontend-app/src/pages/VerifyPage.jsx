@@ -18,7 +18,10 @@ export default function VerifyPage() {
 
         try {
             const res = await axios.get(`http://localhost:3000/api/transcript/${studentId}`);
-            setResult(res.data.record);
+            setResult({
+                record: res.data.record,
+                evmVerification: res.data.evmVerification
+            });
         } catch (err) {
             setError(err.response?.data?.error || err.message || "Failed to find credential");
         } finally {
@@ -61,39 +64,51 @@ export default function VerifyPage() {
                 <div className="status-card" style={{ background: 'rgba(255, 255, 255, 0.02)', borderColor: 'var(--glass-border)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-success)', fontWeight: 600, marginBottom: '1.5rem' }}>
                         <ShieldCheck size={24} /> Verified on Ledger
+
+                        {result.evmVerification?.valid && (
+                            <span style={{ marginLeft: 'auto', background: 'rgba(58, 141, 255, 0.1)', color: 'var(--accent-primary)', padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                🔒 Anchored on Polygon zkEVM
+                            </span>
+                        )}
                     </div>
 
                     <div className="data-grid">
                         <div className="data-item">
                             <div className="data-label">Student ID</div>
-                            <div className="data-value" style={{ color: 'var(--text-primary)' }}>{result.studentId}</div>
+                            <div className="data-value" style={{ color: 'var(--text-primary)' }}>{result.record.studentId}</div>
                         </div>
                         <div className="data-item">
                             <div className="data-label">Degree Program</div>
-                            <div className="data-value" style={{ color: 'var(--text-primary)' }}>{result.degreeName}</div>
+                            <div className="data-value" style={{ color: 'var(--text-primary)' }}>{result.record.degreeName}</div>
                         </div>
                         <div className="data-item">
                             <div className="data-label">Graduation Year</div>
-                            <div className="data-value" style={{ color: 'var(--text-primary)' }}>{result.graduationYear}</div>
+                            <div className="data-value" style={{ color: 'var(--text-primary)' }}>{result.record.graduationYear}</div>
                         </div>
                         <div className="data-item">
                             <div className="data-label">GPA</div>
-                            <div className="data-value" style={{ color: 'var(--text-primary)' }}>{result.gpa}</div>
+                            <div className="data-value" style={{ color: 'var(--text-primary)' }}>{result.record.gpa}</div>
                         </div>
                         <div className="data-item" style={{ gridColumn: '1 / -1' }}>
                             <div className="data-label">Decentralized Identity (DID)</div>
-                            <div className="data-value" style={{ color: 'var(--accent-primary)', fontFamily: 'monospace', fontSize: '1rem' }}>{result.did}</div>
+                            <div className="data-value" style={{ color: 'var(--accent-primary)', fontFamily: 'monospace', fontSize: '1rem' }}>{result.record.did}</div>
                         </div>
                         <div className="data-item" style={{ gridColumn: '1 / -1' }}>
                             <div className="data-label">Document Hash (Anchor)</div>
-                            <div className="data-value" style={{ color: 'var(--text-secondary)', fontFamily: 'monospace', fontSize: '0.875rem' }}>{result.originalHash}</div>
+                            <div className="data-value" style={{ color: 'var(--text-secondary)', fontFamily: 'monospace', fontSize: '0.875rem' }}>{result.record.originalHash}</div>
                         </div>
                         <div className="data-item" style={{ gridColumn: '1 / -1', background: 'rgba(58, 141, 255, 0.05)', borderColor: 'rgba(58, 141, 255, 0.2)' }}>
                             <div className="data-label" style={{ color: 'var(--accent-primary)' }}>IPFS Content Identifier</div>
-                            <a href={`https://gateway.pinata.cloud/ipfs/${result.ipfsCid}`} target="_blank" rel="noopener noreferrer" className="cid-link data-value" style={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>
-                                <LinkIcon size={14} /> {result.ipfsCid} <ExternalLink size={12} style={{ marginLeft: '4px' }} />
+                            <a href={`https://gateway.pinata.cloud/ipfs/${result.record.ipfsCid}`} target="_blank" rel="noopener noreferrer" className="cid-link data-value" style={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>
+                                <LinkIcon size={14} /> {result.record.ipfsCid} <ExternalLink size={12} style={{ marginLeft: '4px' }} />
                             </a>
                         </div>
+                        {result.evmVerification?.valid && (
+                            <div className="data-item" style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--glass-border)', paddingTop: '1rem' }}>
+                                <div className="data-label" style={{ color: 'var(--accent-primary)' }}>EVM Issuer DID</div>
+                                <div className="data-value" style={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>{result.evmVerification.issuerDid}</div>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
