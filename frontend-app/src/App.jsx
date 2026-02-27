@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
 import { ShieldCheck, Layers, FileEdit, Search } from 'lucide-react';
 import IssuePage from './pages/IssuePage';
 import VerifyPage from './pages/VerifyPage';
+import WalletPage from './pages/WalletPage';
 
 function App() {
   return (
@@ -20,6 +21,15 @@ function App() {
           </div>
 
           <div className="nav-links">
+            <NavLink
+              to="/wallet"
+              className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <ShieldCheck size={18} />
+                Student Wallet
+              </div>
+            </NavLink>
             <NavLink
               to="/"
               className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
@@ -47,6 +57,7 @@ function App() {
           <Routes>
             <Route path="/" element={<IssuePage />} />
             <Route path="/verify" element={<VerifyPage />} />
+            <Route path="/wallet" element={<WalletPage />} />
           </Routes>
         </main>
       </div>

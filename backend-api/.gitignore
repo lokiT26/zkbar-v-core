@@ -16,3 +16,5 @@ tmp/
 Thumbs.db
 dummy.pdf
 wallet/
+
+registered_dids.json
